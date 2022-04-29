@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "triggerpath": {
+      "title": "Trigger path",
+      "type": "string"
+    }
+  },
+  "default": { "triggerpath": "electrical.switches.venus-0" }
+}
