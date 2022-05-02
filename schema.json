@@ -1,10 +1,37 @@
 {
   "type": "object",
   "properties": {
-    "triggerpath": {
-      "title": "Trigger path",
+    "heatercontrolpath": {
+      "title": "Heater control path",
       "type": "string"
+    },
+    "batterysocpath": {
+      "title": "Battery SOC path",
+      "type": "string"
+    },
+    "battersocstartthreshold": {
+      "title": "SOC start threshold",
+      "type": "number"
+    },
+    "batterysocstopthreshold": {
+      "title": "SOC stop threshold",
+      "type": "number"
+    },
+    "solarpowerpath": {
+      "title": "Solar power path",
+      "type": "string"
+    },
+    "solarpowerthreshold": {
+      "title": "Solar power operating threshold",
+      "type": "number"
     }
   },
-  "default": { "triggerpath": "electrical.switches.venus-0" }
+  "default": {
+    "heatercontrolpath": "electrical.switches.solarhotwater",
+    "batterysocpath": "electrical.batteries.278.capacity.stateOfCharge",
+    "batterysocstartthreshold": 1.0,
+    "batterysocstopthreshold": 0.95,
+    "solarpowerpath": "electrical.solar.279.panelPower",
+    "solarpowerthreshold": 450
+  }
 }

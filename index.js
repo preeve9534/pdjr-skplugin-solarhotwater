@@ -19,9 +19,9 @@ const Log = require("./lib/signalk-liblog/Log.js");
 const Schema = require("./lib/signalk-libschema/Schema.js");
 const Notification = require("./lib/signalk-libnotification/Notification.js");
 
-const PLUGIN_ID = "dse4510";
-const PLUGIN_NAME = "Signal K interface activity watchdog";
-const PLUGIN_DESCRIPTION = "Monitor a Signal K interface for anomalous drops in activity";
+const PLUGIN_ID = "solarhotwater";
+const PLUGIN_NAME = "Controller for solar hot water generation";
+const PLUGIN_DESCRIPTION = "Controller for solar hot water generation";
 
 const PLUGIN_SCHEMA_FILE = __dirname + "/schema.json";
 const PLUGIN_UISCHEMA_FILE = __dirname + "/uischema.json";
@@ -49,29 +49,22 @@ module.exports = function(app) {
   }
 
   plugin.start = function(options) {
+    var batterysocstream, solarpowerstream;
     var restore = 0;
 
     if (options) {
-      log.N("Started (switch path = '%s')", options.triggerpath);
-      if (options.triggerpath) {
-        unsubscribes.push(app.streamBundle.getSelfStream(options.triggerpath + ".state").onValue(action => {
-	 switch  (action) {
-           case 0: // Relay has turned off...
-	     if (restore) app.putSelfPath(options.triggerpath + ".state", 1, (d) => app.debug("put response: %s", d.message));
-	     break;
-           case 1: // Relay has turned on...
-	     if (restore == 0) {
-	       log.N("sending second pulse");
-               restore = 1;
-               app.putSelfPath(options.triggerpath + ".state", 0, (d) => app.debug("put response: %s", d.message));
-	     } else {
-               restore = 0;
-             }
-             break;
-	   default:
-	     break;
-	  }
-	}));
+      batterysocstream = app.streamBundle.getSelfStream(options.batterysocpath);
+      if (batterysocstream) {
+        solarpowerstream = app.streamBundle.getSelfStream(options.solarpowerpath);
+        if (solarpowerstream) {
+          unsubscribes.push(bacon.combineAsArray(batterysocstream.skipDuplicates(), solarpowerstream.skipDuplicates()).onValue(([soc, power]) => {
+            log.N("SOC = %d, power = %d", soc, power);
+          }));
+        } else {
+          log.N("cannot connect to solar power stream on '%s'", options.solarpowerpath);
+        }
+      } else {
+        log.N("cannot connect to batter soc stream on '%s'", options.batterysocpath);
       }
     }
   }
