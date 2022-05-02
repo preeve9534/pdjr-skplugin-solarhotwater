@@ -18,6 +18,7 @@ const bacon = require('baconjs');
 const Log = require("./lib/signalk-liblog/Log.js");
 const Schema = require("./lib/signalk-libschema/Schema.js");
 const Notification = require("./lib/signalk-libnotification/Notification.js");
+const Delta = require("./lib/signalk-libdelta/Delta.js");
 
 const PLUGIN_ID = "solarhotwater";
 const PLUGIN_NAME = "Controller for solar hot water generation";
@@ -37,6 +38,7 @@ module.exports = function(app) {
   const bacon = require('baconjs');
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   const notification = new Notification(app, plugin.id, { "state": "alarm", "method": [ ] });
+  const delta = new Delta(app, plugin.id);
 
   plugin.schema = function() {
     var schema = Schema.createSchema(PLUGIN_SCHEMA_FILE);
@@ -50,15 +52,36 @@ module.exports = function(app) {
 
   plugin.start = function(options) {
     var batterysocstream, solarpowerstream;
-    var restore = 0;
+    var heaterChargeState = 0;
+    var heaterState = 0;
+
 
     if (options) {
-      batterysocstream = app.streamBundle.getSelfStream(options.batterysocpath);
+      delta.clear().addValue(options.heatercontrolpath, heaterState).commit();
+      batterysocstream = app.streambundle.getSelfStream(options.batterysocpath);
       if (batterysocstream) {
-        solarpowerstream = app.streamBundle.getSelfStream(options.solarpowerpath);
+        solarpowerstream = app.streambundle.getSelfStream(options.solarpowerpath);
         if (solarpowerstream) {
           unsubscribes.push(bacon.combineAsArray(batterysocstream.skipDuplicates(), solarpowerstream.skipDuplicates()).onValue(([soc, power]) => {
-            log.N("SOC = %d, power = %d", soc, power);
+            log.N("SOC = %f, power = %d", soc, power);
+
+            if ((heaterChargeState == 0) && (soc >= options.batterysocstartthreshold)) {
+              log.N("enabling heater operation (battery soc above start threshold)");
+	      heaterChargeState = 1;
+	    }
+
+            if ((heaterChargeState == 1) && (soc <= options.batterysocstopthreshold)) {
+	      log.N("disabling heater operation (battery soc below stop threshold)");
+	      heaterChargeState = 0;
+	      heaterState = 0;
+	    }
+
+            if (heaterChargeState == 1) {
+	      heaterState = (power > options.solarpowerthreshold)?1:0;
+	    }
+
+            delta.clear().addValue(options.heatercontrolpath, heaterState).commit();
+	    
           }));
         } else {
           log.N("cannot connect to solar power stream on '%s'", options.solarpowerpath);
