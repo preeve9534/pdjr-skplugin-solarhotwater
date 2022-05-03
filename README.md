@@ -21,7 +21,8 @@ The plugin recognises the following configuration properties.
 
 Property                 | Description | Default value
 ------------------------ | --- | ---
-heatercontrolpath        | Signal K path which will have its value set to 1 when water heating should be ON and 0 when heating should be OFF. | 'electrical.switches.solarhotwater'
+heatercontrolenabled     | Signal K path whose value determines if the plugin is enabled (value = 1) or disabled (value = 2). | 'control.solarhotwater.enabled'
+heatercontrolstate       | Signal K path which will have its value set to 1 when water heating should be ON and 0 when heating should be OFF. | 'control.solarhotwater.state'
 batterysocpath           | The Signal K path which reports battery SOC. | ''
 batterysocstartthreshold | The SOC at which the controller should start heating (if other conditions are met). | 1.0
 batterysocstopthreshold  | The SOC at which the controller should stop heating. | 0.95
