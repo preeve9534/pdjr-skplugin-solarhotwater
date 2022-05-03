@@ -52,43 +52,50 @@ module.exports = function(app) {
 
   plugin.start = function(options) {
     var batterysocstream, solarpowerstream;
-    var heaterChargeState = 0;
+    var enableHeating = 0;
     var heaterState = 0;
 
+    // Switch off the heater...
+    delta.clear().addValue(options.heatercontrolpath, heaterState).commit();
 
     if (options) {
-      delta.clear().addValue(options.heatercontrolpath, heaterState).commit();
+      // Check availability of battery SOC data...
       batterysocstream = app.streambundle.getSelfStream(options.batterysocpath);
       if (batterysocstream) {
+        // Check availability of solar power data...
         solarpowerstream = app.streambundle.getSelfStream(options.solarpowerpath);
         if (solarpowerstream) {
+          // Subscribe to data streams...
           unsubscribes.push(bacon.combineAsArray(batterysocstream.skipDuplicates(), solarpowerstream.skipDuplicates()).onValue(([soc, power]) => {
-            log.N("SOC = %f, power = %d", soc, power);
 
-            if ((heaterChargeState == 0) && (soc >= options.batterysocstartthreshold)) {
-              log.N("enabling heater operation (battery soc above start threshold)");
-	      heaterChargeState = 1;
-	    }
+            // Use SOC to determine if heating is viable whilst maintaining battery state...
+            if ((enableHeating == 0) && (soc >= options.batterysocstartthreshold)) {
+              log.N("enabling heater operation (battery SOC is above start threshold)");
+              enableHeating = 1;
+            }
 
-            if ((heaterChargeState == 1) && (soc <= options.batterysocstopthreshold)) {
-	      log.N("disabling heater operation (battery soc below stop threshold)");
-	      heaterChargeState = 0;
-	      heaterState = 0;
-	    }
+            // or whether we should stop heating because battery state is declined...
+            if ((enableHeating == 1) && (soc <= options.batterysocstopthreshold)) {
+              log.N("disabling heater operation (battery SOC is below stop threshold)");
+              enableHeating = 0;
+              heaterState = 0;
+            }
 
-            if (heaterChargeState == 1) {
-	      heaterState = (power > options.solarpowerthreshold)?1:0;
-	    }
-
+            // If heating is enabled switch heating on and off dependent upon solar power output... 
+            if (enableHeating == 1) {
+              heaterState = (power > options.solarpowerthreshold)?1:0;
+            }
             delta.clear().addValue(options.heatercontrolpath, heaterState).commit();
-	    
+        
           }));
         } else {
-          log.N("cannot connect to solar power stream on '%s'", options.solarpowerpath);
+          log.E("cannot connect to solar power stream on '%s'", options.solarpowerpath);
         }
       } else {
-        log.N("cannot connect to batter soc stream on '%s'", options.batterysocpath);
+        log.E("cannot connect to battery SOC stream on '%s'", options.batterysocpath);
       }
+    } else {
+      log.E("bad or missing configuration");
     }
   }
 
