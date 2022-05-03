@@ -66,25 +66,26 @@ module.exports = function(app) {
         solarpowerstream = app.streambundle.getSelfStream(options.solarpowerpath);
         if (solarpowerstream) {
           // Subscribe to data streams...
+	  log.N("starting automatic heater control");
           unsubscribes.push(bacon.combineAsArray(batterysocstream.skipDuplicates(), solarpowerstream.skipDuplicates()).onValue(([soc, power]) => {
-
+            soc = parseInt(soc * 100);
             // Use SOC to determine if heating is viable whilst maintaining battery state...
-            if ((enableHeating == 0) && (soc >= options.batterysocstartthreshold)) {
-              log.N("enabling heater operation (battery SOC is above start threshold)");
-              enableHeating = 1;
-            }
-
-            // or whether we should stop heating because battery state is declined...
-            if ((enableHeating == 1) && (soc <= options.batterysocstopthreshold)) {
-              log.N("disabling heater operation (battery SOC is below stop threshold)");
-              enableHeating = 0;
-              heaterState = 0;
+            if (enableHeating == 0) {
+              if (soc >= options.batterysocstartthreshold) {
+                enableHeating = 1;
+              }
+            } else {
+              if (soc <= options.batterysocstopthreshold) {
+                enableHeating = 0;
+                heaterState = 0;
+              }
             }
 
             // If heating is enabled switch heating on and off dependent upon solar power output... 
             if (enableHeating == 1) {
               heaterState = (power > options.solarpowerthreshold)?1:0;
             }
+            log.N("Automatic heating is %s and %s (%d, %d)", (enableHeating)?"ENABLED":"DISABLED", (heaterState)?"ON":"OFF", soc, power);
             delta.clear().addValue(options.heatercontrolpath, heaterState).commit();
         
           }));

@@ -9,7 +9,7 @@
       "title": "Battery SOC path",
       "type": "string"
     },
-    "battersocstartthreshold": {
+    "batterysocstartthreshold": {
       "title": "SOC start threshold",
       "type": "number"
     },
@@ -29,9 +29,9 @@
   "default": {
     "heatercontrolpath": "electrical.switches.solarhotwater",
     "batterysocpath": "electrical.batteries.278.capacity.stateOfCharge",
-    "batterysocstartthreshold": 1.0,
-    "batterysocstopthreshold": 0.95,
+    "batterysocstartthreshold": 99,
+    "batterysocstopthreshold": 95,
     "solarpowerpath": "electrical.solar.279.panelPower",
-    "solarpowerthreshold": 450
+    "solarpowerthreshold": 400
   }
 }
