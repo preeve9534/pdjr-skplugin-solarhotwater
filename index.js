@@ -68,7 +68,7 @@ module.exports = function(app) {
           var solarpowerstream = app.streambundle.getSelfStream(options.solarpowerpath);
           if (solarpowerstream) {
             // Subscribe to data streams...
-            unsubscribes.push(bacon.combineAsArray(pluginenabledstream.skipDuplicates(), batterysocstream.skipDuplicates(), solarpowerstream.skipDuplicates()).onValue(([enabled, soc, power]) => {
+            unsubscribes.push(bacon.combineAsArray(enablestream.skipDuplicates(), batterysocstream.skipDuplicates(), solarpowerstream.skipDuplicates()).onValue(([enabled, soc, power]) => {
 	      enabled = parseInt(enabled);
               if (enabled) {
                 soc = parseInt(soc * 100);
