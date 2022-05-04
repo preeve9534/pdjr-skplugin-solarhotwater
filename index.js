@@ -51,49 +51,63 @@ module.exports = function(app) {
   }
 
   plugin.start = function(options) {
-    var batterysocstream, solarpowerstream;
-    var enableHeating = 0;
+    var batterySocPermits = 0;
     var heaterState = 0;
 
     // Switch off the heater...
     delta.clear().addValue(options.heatercontrolpath, heaterState).commit();
 
     if (options) {
-      // Check availability of battery SOC data...
-      batterysocstream = app.streambundle.getSelfStream(options.batterysocpath);
-      if (batterysocstream) {
-        // Check availability of solar power data...
-        solarpowerstream = app.streambundle.getSelfStream(options.solarpowerpath);
-        if (solarpowerstream) {
-          // Subscribe to data streams...
-	  log.N("starting automatic heater control");
-          unsubscribes.push(bacon.combineAsArray(batterysocstream.skipDuplicates(), solarpowerstream.skipDuplicates()).onValue(([soc, power]) => {
-            soc = parseInt(soc * 100);
-            // Use SOC to determine if heating is viable whilst maintaining battery state...
-            if (enableHeating == 0) {
-              if (soc >= options.batterysocstartthreshold) {
-                enableHeating = 1;
-              }
-            } else {
-              if (soc <= options.batterysocstopthreshold) {
-                enableHeating = 0;
-                heaterState = 0;
-              }
-            }
+      // Check availability of enabling control...
+      var enablestream = app.streambundle.getSelfStream(options.enablepath);
+      if (enablestream) {
+        // Check availability of battery SOC data...
+        var batterysocstream = app.streambundle.getSelfStream(options.batterysocpath);
+        if (batterysocstream) {
+          // Check availability of solar power data...
+          var solarpowerstream = app.streambundle.getSelfStream(options.solarpowerpath);
+          if (solarpowerstream) {
+            // Subscribe to data streams...
+            unsubscribes.push(bacon.combineAsArray(pluginenabledstream.skipDuplicates(), batterysocstream.skipDuplicates(), solarpowerstream.skipDuplicates()).onValue(([enabled, soc, power]) => {
+	      enabled = parseInt(enabled);
+              if (enabled) {
+                soc = parseInt(soc * 100);
+		power = parseInt(power);
+                // Use SOC to determine if heating is viable whilst maintaining battery state...
+                if (batterySocPermits == 0) {
+                  if (soc >= options.batterysocstartthreshold) {
+                    batterySocPermits = 1;
+                  }
+                } else {
+                  if (soc <= options.batterysocstopthreshold) {
+                    batterySocPermits = 0;
+                    heaterState = 0;
+                  }
+                }
 
-            // If heating is enabled switch heating on and off dependent upon solar power output... 
-            if (enableHeating == 1) {
-              heaterState = (power > options.solarpowerthreshold)?1:0;
-            }
-            log.N("Automatic heating is %s and %s (%d, %d)", (enableHeating)?"ENABLED":"DISABLED", (heaterState)?"ON":"OFF", soc, power);
-            delta.clear().addValue(options.heatercontrolpath, heaterState).commit();
-        
-          }));
+                // If heating is enabled switch heating on and off dependent upon solar power output... 
+                if (batterySocPermits === 1) {
+                  heaterState = (power > options.solarpowerthreshold)?1:0;
+                }
+                if (heaterState === 1) {
+                  log.N("solar water heating is enabled and ON");
+                } else {
+                  log.N("solar water heating is enabled and OFF (%s)", (batterySocPermits === 1)?"solar power too low":"battery SOC too low")
+                }
+                delta.clear().addValue(options.heatercontrolpath, heaterState).commit();
+              } else {
+                log.N("solar water heating is disabled")
+                delta.clear().addValue(options.heatercontrolpath, 0).commit();
+              }
+            }));
+          } else {
+            log.E("cannot connect to solar power stream on '%s'", options.solarpowerpath);
+          }
         } else {
-          log.E("cannot connect to solar power stream on '%s'", options.solarpowerpath);
+          log.E("cannot connect to battery SOC stream on '%s'", options.batterysocpath);
         }
       } else {
-        log.E("cannot connect to battery SOC stream on '%s'", options.batterysocpath);
+        log.E("cannot connect to plugin control stream");
       }
     } else {
       log.E("bad or missing configuration");
@@ -104,7 +118,7 @@ module.exports = function(app) {
     unsubscribes.forEach(f => f());
     unsubscribes = [];
   }
-
+  
   return(plugin);
 }
 

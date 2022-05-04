@@ -1,8 +1,12 @@
 {
   "type": "object",
   "properties": {
-    "heatercontrolpath": {
-      "title": "Heater control path",
+    "enablepath": {
+      "title": "Enable service path",
+      "type": "string"
+    }, 
+    "outputpath": {
+      "title": "Output control path",
       "type": "string"
     },
     "batterysocpath": {
@@ -27,7 +31,8 @@
     }
   },
   "default": {
-    "heatercontrolpath": "electrical.switches.solarhotwater",
+    "enablepath": "mqtt.switch.solar_hot_water",
+    "statepath": "plugins.solarhotwater.state",
     "batterysocpath": "electrical.batteries.278.capacity.stateOfCharge",
     "batterysocstartthreshold": 99,
     "batterysocstopthreshold": 95,
