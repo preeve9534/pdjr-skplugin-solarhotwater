@@ -11,9 +11,10 @@ a thermal store.
 The plugin operates by monitoring paths which report the vessel's
 instantaneous battery SOC and solar power output.
 These readings are compared to configured thresholds and used to
-modulate the value of a state key which it is presumed will be
-used to moderate the operating state of the thermal store's
-immersion heater.
+modulate the value of a key which it is presumed will itself be used
+to operate the thermal store's immersion heater.
+
+The aim
 
 ## Configuration
 
