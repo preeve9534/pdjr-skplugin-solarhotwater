@@ -47,3 +47,11 @@ solarpowerthreshold      | The solar panel output in Watts above which heating s
    and if so, *outputpath* is set to 1, otherwise 0.
 
 In summary, with the plugin enabled, if the battery SOC is 
+
+## Console messages
+
+### Solar water heating is disabled
+
+The value on *enablepath* is 0. Set this value to 1 to enable the plugin.
+
+### Solar water heating is enabled and OFF

@@ -17,7 +17,6 @@
 const bacon = require('baconjs');
 const Log = require("./lib/signalk-liblog/Log.js");
 const Schema = require("./lib/signalk-libschema/Schema.js");
-const Notification = require("./lib/signalk-libnotification/Notification.js");
 const Delta = require("./lib/signalk-libdelta/Delta.js");
 
 const PLUGIN_ID = "solarhotwater";
@@ -37,7 +36,6 @@ module.exports = function(app) {
 
   const bacon = require('baconjs');
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
-  const notification = new Notification(app, plugin.id, { "state": "alarm", "method": [ ] });
   const delta = new Delta(app, plugin.id);
 
   plugin.schema = function() {
@@ -55,7 +53,7 @@ module.exports = function(app) {
     var heaterState = 0;
 
     // Switch off the heater...
-    delta.clear().addValue(options.heatercontrolpath, heaterState).commit();
+    delta.clear().addValue(options.outputpath, heaterState).commit();
 
     if (options) {
       // Check availability of enabling control...
@@ -94,10 +92,10 @@ module.exports = function(app) {
                 } else {
                   log.N("solar water heating is enabled and OFF (%s)", (batterySocPermits === 1)?"solar power too low":"battery SOC too low")
                 }
-                delta.clear().addValue(options.heatercontrolpath, heaterState).commit();
+                delta.clear().addValue(options.outputpath, heaterState).commit();
               } else {
                 log.N("solar water heating is disabled")
-                delta.clear().addValue(options.heatercontrolpath, 0).commit();
+                delta.clear().addValue(options.outputpath, 0).commit();
               }
             }));
           } else {
