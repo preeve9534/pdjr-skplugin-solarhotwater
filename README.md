@@ -47,7 +47,11 @@ solarpowerthreshold      | The solar panel output in Watts above which heating s
    *solarpowerpath* is checked to see if it is greater than *solarpowerthreshold*
    and if so, *outputpath* is set to 1, otherwise 0.
 
-In summary, with the plugin enabled, if the battery SOC is 
+Exactly how configuration settings are tailored to a particular hardware
+installation is a matter of judgement and preference.
+On my vessel with a large battery bank and small solar array it makes
+sense to favour battery charge over water heating and I set the SOC start
+threshold to 100% and stop threshold to 98%.
 
 ## Console messages
 
