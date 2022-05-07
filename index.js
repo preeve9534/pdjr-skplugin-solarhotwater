@@ -49,8 +49,8 @@ module.exports = function(app) {
   }
 
   plugin.start = function(options) {
-    var batterySocPermits = 0;
-    var heaterState = 0;
+    var batterySocPermits = 0, heaterState = 0;
+    var lastEnabled = -1, lastBatterySocPermits = -1, lastHeaterState = -1;
 
     // Switch off the heater...
     delta.clear().addValue(options.outputpath, heaterState).commit();
@@ -67,10 +67,10 @@ module.exports = function(app) {
           if (solarpowerstream) {
             // Subscribe to data streams...
             unsubscribes.push(bacon.combineAsArray(enablestream.skipDuplicates(), batterysocstream.skipDuplicates(), solarpowerstream.skipDuplicates()).onValue(([enabled, soc, power]) => {
-	      enabled = parseInt(enabled);
+	            enabled = parseInt(enabled);
               if (enabled) {
                 soc = parseInt(soc * 100);
-		power = parseInt(power);
+		            power = parseInt(power);
                 // Use SOC to determine if heating is viable whilst maintaining battery state...
                 if (batterySocPermits == 0) {
                   if (soc >= options.batterysocstartthreshold) {
@@ -88,15 +88,16 @@ module.exports = function(app) {
                   heaterState = (power > options.solarpowerthreshold)?1:0;
                 }
                 if (heaterState === 1) {
-                  log.N("solar water heating is enabled and ON");
+                  if ((enabled != lastEnabled) || (heaterState != lastHeaterState)) log.N("solar water heating is enabled and ON");
                 } else {
-                  log.N("solar water heating is enabled and OFF (%s)", (batterySocPermits === 1)?"solar power too low":"battery SOC too low")
+                  if ((enabled != lastEnabled) || (batterySocPermits != lastBatterySocPermits) || (heaterState != lastHeaterState)) log.N("solar water heating is enabled and OFF (%s)", (batterySocPermits === 1)?"solar power too low":"battery SOC too low")
                 }
                 delta.clear().addValue(options.outputpath, heaterState).commit();
               } else {
-                log.N("solar water heating is disabled")
+                if (enabled != lastEnabled) log.N("solar water heating is disabled")
                 delta.clear().addValue(options.outputpath, 0).commit();
               }
+              lastEnabled = enabled; lastBatterySocPermits = batterySocPermits; lastHeaterState = heaterState;
             }));
           } else {
             log.E("cannot connect to solar power stream on '%s'", options.solarpowerpath);
