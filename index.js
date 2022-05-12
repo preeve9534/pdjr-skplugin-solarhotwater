@@ -67,10 +67,10 @@ module.exports = function(app) {
           if (solarpowerstream) {
             // Subscribe to data streams...
             unsubscribes.push(bacon.combineAsArray(enablestream.skipDuplicates(), batterysocstream.skipDuplicates(), solarpowerstream.skipDuplicates()).onValue(([enabled, soc, power]) => {
-	            enabled = parseInt(enabled);
+              enabled = parseInt(enabled);
               if (enabled) {
                 soc = parseInt(soc * 100);
-		            power = parseInt(power);
+                power = parseInt(power);
                 // Use SOC to determine if heating is viable whilst maintaining battery state...
                 if (batterySocPermits == 0) {
                   if (soc >= options.batterysocstartthreshold) {
@@ -95,8 +95,9 @@ module.exports = function(app) {
                 delta.clear().addValue(options.outputpath, heaterState).commit();
               } else {
                 if (enabled != lastEnabled) log.N("solar water heating is disabled")
-                delta.clear().addValue(options.outputpath, 0).commit();
+                heaterState = 0;
               }
+              if (heaterstate != lastHeaterState) delta.clear().addValue(options.outputpath, heaterState).commit();
               lastEnabled = enabled; lastBatterySocPermits = batterySocPermits; lastHeaterState = heaterState;
             }));
           } else {
